@@ -476,7 +476,7 @@ match meta: medium
 
 
 
-=== TEST 14: special characters in parameter should match
+=== TEST 14: special characters in parameter should match (space)
 --- config
     location /t {
         content_by_lua_block {
@@ -501,4 +501,33 @@ GET /t
 [error]
 --- response_body
 match meta: metadata /name
-matched: {"_path":"/name/:name/id","name":"json%20space"}
+matched: {"_path":"/name/:name/id","name":"json%2fspace"}
+
+
+
+=== TEST 15: special characters in parameter should match (slash)
+--- config
+    location /t {
+        content_by_lua_block {
+            local json = require("toolkit.json")
+            local radix = require("resty.radixtree")
+            local rx = radix.new({
+                {
+                    paths = {"/name/:name/id"},
+                    metadata = "metadata /name",
+                },
+            })
+
+            local opts = {matched = {}}
+            local meta = rx:match("/name/json%2fslash/id", opts)
+            ngx.say("match meta: ", meta)
+            ngx.say("matched: ", json.encode(opts.matched))
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+match meta: metadata /name
+matched: {"_path":"/name/:name/id","name":"json%2fslash"}
